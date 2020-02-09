@@ -107,7 +107,7 @@ namespace BlogProjectAPI
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "BlogProjectApi V1");
                 c.RoutePrefix = "api/docs";
                 c.InjectStylesheet("/css/SwaggerInject.css");
-                    
+                c.DocumentTitle = "BlogProjectApi";
             });
 
             app.UseEndpoints(endpoints =>
