@@ -1,3 +1,6 @@
+using System;
+using System.IO;
+using System.Reflection;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,6 +15,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using ServiceStack.Redis;
 
 namespace BlogProjectAPI
@@ -56,15 +60,24 @@ namespace BlogProjectAPI
             b=>b.MigrationsAssembly("BlogProjectAPI")));
 
             services.AddMvc();
+
+            services.AddSwaggerGen(x =>
+                {
+                    x.SwaggerDoc("v1", new OpenApiInfo {Title = "BlogProjectApi", Version = "v1"});
+                    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                    x.IncludeXmlComments(xmlPath);
+                });
+
             //services.AddDistributedRedisCache(option =>
             //{
             //    option.Configuration = Configuration.GetConnectionString("RedisConnection");
             //    option.InstanceName = "blogApi";
             //    option.ConfigurationOptions.DefaultDatabase = 0;
             //    option.ConfigurationOptions.ConnectTimeout = 3;
-                
+
             //});
-            //services.AddRazorPages();
+            services.AddRazorPages();
             services.AddTransient<ITokenRepository, EfTokenRepository>();
             services.AddTransient(typeof(IRedisRepository<>), typeof(RedisRepository<>));
         }
@@ -84,6 +97,16 @@ namespace BlogProjectAPI
             //app.UseAuthentication();
 
             app.UseAuthorization();
+            
+            app.UseStaticFiles(); //UseStaticFiles kullanýlmazsa Swagger çalýþmýyor.
+            app.UseSwagger(); // Enable middleware to serve generated Swagger as a JSON endpoint.
+            // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.),
+            // specifying the Swagger JSON endpoint.
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "BlogProjectApi V1");
+                c.RoutePrefix = "api/docs";
+            });
 
             app.UseEndpoints(endpoints =>
             {

@@ -23,7 +23,12 @@ namespace BlogProjectAPI.Controllers
             _tokenRepository = tokenRepository;
             _configuration = configuration;
         }
-
+        
+        /// <summary>
+        /// Herhangi bir Methoda istek yapmak için ilk olarak bu method ile Token almalısınız.
+        /// </summary>
+        /// <param name="loginModel"></param>
+        /// <returns></returns>
         [HttpPost]
         [AllowAnonymous]
         [Route("GetToken")]
