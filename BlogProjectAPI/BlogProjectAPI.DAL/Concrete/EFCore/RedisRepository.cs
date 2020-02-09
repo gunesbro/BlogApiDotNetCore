@@ -6,17 +6,18 @@ using ServiceStack.Redis;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using Microsoft.Extensions.Caching.Distributed;
 using RedisException = ServiceStack.Redis.RedisException;
 
 namespace BlogProjectAPI.DAL.Concrete.EFCore
 {
-    public class RedisRepository<T> : IRedisRepository<T> where T : class 
+    public class RedisRepository<T> : IRedisRepository<T> where T : class
     {
         private readonly DatabaseContext _context;
         private readonly IConfiguration _configuration;
         private IDistributedCache _cache;
-        public RedisRepository(DatabaseContext context, IConfiguration configuration,IDistributedCache cache)
+        public RedisRepository(DatabaseContext context, IConfiguration configuration, IDistributedCache cache)
         {
             _context = context;
             _configuration = configuration;
@@ -31,11 +32,16 @@ namespace BlogProjectAPI.DAL.Concrete.EFCore
             _prefix = _configuration["CachePrefix"];
             try
             {
-                using IRedisClient client = new RedisClient(_configuration["Host"],int.Parse(_configuration["Port"]), _configuration["Password"],int.Parse(_configuration["Db"]));
+                var host = _configuration.GetValue<string>("RedisConfig:Host");
+                var port = _configuration.GetValue<int>("RedisConfig:Port");
+                var password = _configuration.GetValue<string>("RedisConfig:Password");
+                var db = _configuration.GetValue<int>("RedisConfig:Db");
+
+                using IRedisClient client = new RedisClient(host, port, password, db);
                 if (client.Ping())
                 {
-                    List<string> allKeys = client.SearchKeys(_prefix + cacheKey + "*"); 
-                    
+                    List<string> allKeys = client.SearchKeys(_prefix + cacheKey + "*");
+
                     if (allKeys.Count > 0)
                     {
                         foreach (var key in allKeys)
@@ -71,7 +77,7 @@ namespace BlogProjectAPI.DAL.Concrete.EFCore
             {
                 //Redis patlarsa buralar yanar
                 Console.Write(ex.Message);
-                
+
                 return null;
             }
 
