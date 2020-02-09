@@ -1,0 +1,9 @@
+﻿
+img {
+    display:none;
+}
+.topbar-wrapper {
+    background: url(../img/logo.png) no-repeat;
+    -ms-background-size: contain;
+    background-size: contain;
+}
