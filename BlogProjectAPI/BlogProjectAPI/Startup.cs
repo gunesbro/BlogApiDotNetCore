@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Security.Claims;
@@ -7,6 +8,7 @@ using System.Threading.Tasks;
 using BlogProjectAPI.DAL.Abstract;
 using BlogProjectAPI.DAL.Concrete.EFCore;
 using BlogProjectAPI.Data.Models;
+using BlogProjectAPI.Middlewares;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -29,7 +31,6 @@ namespace BlogProjectAPI
 
         public IConfiguration Configuration { get; }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
@@ -55,18 +56,44 @@ namespace BlogProjectAPI
                         OnAuthenticationFailed = fld => Task.CompletedTask
                     };
                 });
-            services.AddDbContext<DatabaseContext>(options => 
+            services.AddDbContext<DatabaseContext>(options =>
             options.UseSqlServer(Configuration.GetConnectionString("AzureConnection"),
-            b=>b.MigrationsAssembly("BlogProjectAPI")));
+            b => b.MigrationsAssembly("BlogProjectAPI")));
 
             services.AddMvc();
 
             services.AddSwaggerGen(x =>
                 {
-                    x.SwaggerDoc("v1", new OpenApiInfo {Title = "BlogProjectApi", Version = "v1"});
+                    x.SwaggerDoc("v1", new OpenApiInfo { Title = "BlogProjectApi", Version = "v1" });
                     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
                     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
                     x.IncludeXmlComments(xmlPath);
+                    x.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                    {
+                        Description = @"JWT Authorization header using the Bearer scheme. \r\n\r\n 
+                      Enter 'Bearer' [space] and then your token in the text input below.
+                      \r\n\r\nExample: 'Bearer 12345abcdef'",
+                        Name = "Authorization",
+                        In = ParameterLocation.Header,
+                        Type = SecuritySchemeType.ApiKey,
+                        Scheme = "Bearer"
+                    });
+                    x.AddSecurityRequirement(new OpenApiSecurityRequirement()
+                    {{
+                            new OpenApiSecurityScheme
+                            {
+                                Reference = new OpenApiReference
+                                {
+                                    Type = ReferenceType.SecurityScheme,
+                                    Id = "Bearer"
+                                },
+                                Scheme = "oauth2",
+                                Name = "Bearer",
+                                In = ParameterLocation.Header,
+
+                            },
+                            new List<string>()
+                        }});
                 });
 
             //services.AddDistributedRedisCache(option =>
@@ -75,33 +102,26 @@ namespace BlogProjectAPI
             //    option.InstanceName = "blogApi";
             //    option.ConfigurationOptions.DefaultDatabase = 0;
             //    option.ConfigurationOptions.ConnectTimeout = 3;
-
             //});
             services.AddRazorPages();
             services.AddTransient<ITokenRepository, EfTokenRepository>();
             services.AddTransient(typeof(IRedisRepository<>), typeof(RedisRepository<>));
+            services.AddTransient<IPostsRepository, PostsRepository>();
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
-
             app.UseHttpsRedirection();
-
             app.UseRouting();
-
-            //app.UseAuthentication();
-
+            app.UseAuthentication();//Bunsuz Authorize attiribute ü patlak veriyor.
             app.UseAuthorization();
-            
+
             app.UseStaticFiles(); //UseStaticFiles kullanýlmazsa Swagger çalýþmýyor.
-            app.UseSwagger(); // Enable middleware to serve generated Swagger as a JSON endpoint.
-            // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.),
-            // specifying the Swagger JSON endpoint.
+            app.UseSwagger();
             app.UseSwaggerUI(c =>
             {
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "BlogProjectApi V1");
@@ -109,7 +129,7 @@ namespace BlogProjectAPI
                 c.InjectStylesheet("/css/SwaggerInject.css");
                 c.DocumentTitle = "BlogProjectApi";
             });
-
+            app.UseMiddleware<ExceptionHandler>();
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();

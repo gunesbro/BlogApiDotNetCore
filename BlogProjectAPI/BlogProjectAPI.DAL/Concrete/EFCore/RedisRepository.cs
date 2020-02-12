@@ -16,70 +16,59 @@ namespace BlogProjectAPI.DAL.Concrete.EFCore
     {
         private readonly DatabaseContext _context;
         private readonly IConfiguration _configuration;
-        private IDistributedCache _cache;
-        public RedisRepository(DatabaseContext context, IConfiguration configuration, IDistributedCache cache)
+        public RedisRepository(DatabaseContext context, IConfiguration configuration)
         {
             _context = context;
             _configuration = configuration;
-            _cache = cache;
+
         }
 
         string _prefix;
         List<T> _dataList = new List<T>();
         public List<T> GetAllCachedData(string cacheKey, TimeSpan expiresIn, string[] includes, bool? asNoTracking = false)
         {
+            //Azure Redis dataları lokal redis e göre çok daha yavaş getiriyor.
             //asNoTracking sadece select yapılacak daha sonra modify edilmeyecek datalar için true olmalı.
             _prefix = _configuration["CachePrefix"];
-            try
+
+            var host = _configuration.GetValue<string>("RedisConfig:Host");
+            var port = _configuration.GetValue<int>("RedisConfig:Port");
+            var password = _configuration.GetValue<string>("RedisConfig:Password");
+            var db = _configuration.GetValue<int>("RedisConfig:Db");
+
+            using IRedisClient client = new RedisClient(host, port, password, db);
+            if (client.Ping())
             {
-                var host = _configuration.GetValue<string>("RedisConfig:Host");
-                var port = _configuration.GetValue<int>("RedisConfig:Port");
-                var password = _configuration.GetValue<string>("RedisConfig:Password");
-                var db = _configuration.GetValue<int>("RedisConfig:Db");
+                var allKeys = client.SearchKeys(_prefix + cacheKey + "*");
 
-                using IRedisClient client = new RedisClient(host, port, password, db);
-                if (client.Ping())
+                if (allKeys.Count > 0)
                 {
-                    List<string> allKeys = client.SearchKeys(_prefix + cacheKey + "*");
-
-                    if (allKeys.Count > 0)
+                    foreach (var key in allKeys)
                     {
-                        foreach (var key in allKeys)
-                        {
-                            _dataList.Add(client.Get<T>(key));
-                        }
-
-                        return _dataList;
+                        _dataList.Add(client.Get<T>(key));
                     }
-                    else
-                    {
-                        var data = asNoTracking == false ?
-                                includes.Length > 1 ? _context.Set<T>().Include(includes[0]).Include(includes[1])
-                                : _context.Set<T>().Include(includes[0])
-                            : includes.Length > 1 ?
-                                _context.Set<T>().Include(includes[0]).Include(includes[1]).AsNoTracking()
-                                : _context.Set<T>().Include(includes[0]).AsNoTracking();
 
-                        foreach (var item in data.ToList())
-                        {
-                            var cacheData = client.As<T>();
-                            cacheData.SetValue(_prefix + cacheKey + Guid.NewGuid().ToString("N"), item, expiresIn);
-                        }
-                        //return GetAllCachedData(cacheKey, expiresIn, includes, asNoTracking);
-                        return data.ToList();
-                    }
+                    return _dataList;
                 }
 
-                return null;
+                var data = asNoTracking == false ?
+              includes.Length > 1 ? _context.Set<T>().Include(includes[0]).Include(includes[1])
+              : _context.Set<T>().Include(includes[0])
+              : includes.Length > 1 ?
+                  _context.Set<T>().Include(includes[0]).Include(includes[1]).AsNoTracking()
+                  : _context.Set<T>().Include(includes[0]).AsNoTracking();
 
+                foreach (var item in data.ToList())
+                {
+                    var cacheData = client.As<T>();
+                    cacheData.SetValue(_prefix + cacheKey + Guid.NewGuid().ToString("N"), item, expiresIn);
+                }
+                //return GetAllCachedData(cacheKey, expiresIn, includes, asNoTracking);
+                return data.ToList();
             }
-            catch (RedisException ex)
-            {
-                //Redis patlarsa buralar yanar
-                Console.Write(ex.Message);
 
-                return null;
-            }
+            throw new Exception("RedisReposity Exception");
+
 
         }
     }
