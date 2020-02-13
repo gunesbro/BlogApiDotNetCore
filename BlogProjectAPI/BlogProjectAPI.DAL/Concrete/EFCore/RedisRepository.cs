@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Extensions.Caching.Distributed;
+using ServiceStack;
 using RedisException = ServiceStack.Redis.RedisException;
 
 namespace BlogProjectAPI.DAL.Concrete.EFCore
@@ -61,15 +62,12 @@ namespace BlogProjectAPI.DAL.Concrete.EFCore
                 foreach (var item in data.ToList())
                 {
                     var cacheData = client.As<T>();
-                    cacheData.SetValue(_prefix + cacheKey + Guid.NewGuid().ToString("N"), item, expiresIn);
+                    cacheData.SetValue(_prefix + cacheKey + item.GetId(), item, expiresIn);
                 }
                 //return GetAllCachedData(cacheKey, expiresIn, includes, asNoTracking);
                 return data.ToList();
             }
-
             throw new Exception("RedisReposity Exception");
-
-
         }
     }
 }

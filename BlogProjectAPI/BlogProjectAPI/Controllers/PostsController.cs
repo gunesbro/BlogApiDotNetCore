@@ -39,5 +39,18 @@ namespace BlogProjectAPI.Controllers
             }
             return BadRequest();
         }
+        
+        [HttpPost]
+        [Route("GetPostsById")]
+        public IActionResult GetPostsById(int postId)
+        {
+            var result = _postsRepository.GetById(postId);
+            if (result != null)
+            {
+                return Ok(result);
+            }
+
+            return BadRequest();
+        }
     }
 }

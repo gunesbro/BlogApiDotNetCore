@@ -20,6 +20,6 @@ namespace BlogProjectAPI.DAL.Abstract
         /// <returns></returns>
         Task<List<dynamic>> GetAll(GetPostsModel model);
 
-        Task<Posts> GetById(int id);
+        Posts GetById(int id);
     }
 }
