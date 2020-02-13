@@ -47,7 +47,7 @@ namespace BlogProjectAPI.Controllers
                 //TokenHelper.LogThisAccess(loginModel,false, "Not Approved");
                 return BadRequest(new { User = loginModel.Username, Access = "Not Approved" });
             }
-            return BadRequest();
+            return Unauthorized();
 
         }
     }

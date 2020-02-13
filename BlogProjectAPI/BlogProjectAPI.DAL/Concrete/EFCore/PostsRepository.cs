@@ -23,23 +23,29 @@ namespace BlogProjectAPI.DAL.Concrete.EFCore
             _configuration = configuration;
         }
 
-        public List<Posts> dataList;
+
         public async Task<List<dynamic>> GetAll(GetPostsModel model)
+        {
+            var data = GetPostList();
+            var filter = data.AsQueryable().OrderBy(model.SortBy + " " + model.OrderBy).Skip(model.Skip);
+            var filtered = model.Take == 0 ? await filter.ToDynamicListAsync() : await filter.Take(model.Take).ToDynamicListAsync();
+            return filtered;
+        }
+
+        public List<Posts> GetPostList()
         {
             string cacheKey = "Post";
             string[] includes = { "Authors" };
             var expireMin = _configuration.GetValue<int>("RedisConfig:CacheExpireMin");
             TimeSpan expiresIn = TimeSpan.FromMinutes(expireMin);
-
-            dataList = _redisRepository.GetAllCachedData(cacheKey, expiresIn, includes, false);
-            var filter = dataList.AsQueryable().OrderBy(model.SortBy + " " + model.OrderBy).Skip(model.Skip);
-            var filtered = model.Take == 0 ? await filter.ToDynamicListAsync() : await filter.Take(model.Take).ToDynamicListAsync();
-            return filtered;
+            var dataList = _redisRepository.GetAllCachedData(cacheKey, expiresIn, includes, false);
+            return dataList;
         }
-
-        public Task<Posts> GetById(int id)
+        public Posts GetById(int id)
         {
-            throw new NotImplementedException();
+            var data = GetPostList();
+            var findById = data.FirstOrDefault(x => x.PostId == id);
+            return findById;
         }
     }
 }
