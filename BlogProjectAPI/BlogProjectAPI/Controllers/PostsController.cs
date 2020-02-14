@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using BlogProjectAPI.DAL.Abstract;
 using BlogProjectAPI.Data.ViewModels;
@@ -32,6 +33,7 @@ namespace BlogProjectAPI.Controllers
         [Route("GetPosts")]
         public async Task<IActionResult> GetPosts([FromBody]GetPostsModel model)
         {
+            var whichUserReachedThisMethod = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var result = await _postsRepository.GetAll(model);
             if (result != null)
             {

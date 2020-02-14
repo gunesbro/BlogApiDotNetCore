@@ -8,7 +8,7 @@ namespace BlogProjectAPI.Data.Models
         : base(options)
         { }
         public DbSet<TokenUser> TokenUsers { get; set; }
-        public DbSet<TokenAccessLogs> TokenAccessLogs { get; set; }
+        public DbSet<AccessLogs> AccessLogs { get; set; }
         public DbSet<Roles> Roles { get; set; }
         public DbSet<Posts> Posts { get; set; }
         public DbSet<Tags> Tags { get; set; }

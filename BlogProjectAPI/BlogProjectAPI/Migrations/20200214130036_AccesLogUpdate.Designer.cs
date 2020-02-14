@@ -4,14 +4,16 @@ using BlogProjectAPI.Data.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace BlogProjectAPI.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    partial class DatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20200214130036_AccesLogUpdate")]
+    partial class AccesLogUpdate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -26,6 +28,9 @@ namespace BlogProjectAPI.Migrations
                         .HasColumnType("int")
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
+                    b.Property<string>("Body")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Host")
                         .HasColumnType("nvarchar(max)");
 
@@ -35,17 +40,11 @@ namespace BlogProjectAPI.Migrations
                     b.Property<string>("QueryString")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("RequestBody")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ResponseBody")
+                    b.Property<string>("RequestOrResponse")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Scheme")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("StatusCode")
-                        .HasColumnType("int");
 
                     b.Property<DateTime>("Time")
                         .HasColumnType("datetime2");
