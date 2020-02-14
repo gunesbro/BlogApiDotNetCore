@@ -104,9 +104,11 @@ namespace BlogProjectAPI
             //    option.ConfigurationOptions.ConnectTimeout = 3;
             //});
             services.AddRazorPages();
-            services.AddTransient<ITokenRepository, EfTokenRepository>();
-            services.AddTransient(typeof(IRedisRepository<>), typeof(RedisRepository<>));
-            services.AddTransient<IPostsRepository, PostsRepository>();
+            services.AddScoped<ITokenRepository, EfTokenRepository>();
+            services.AddScoped<IAccessLoggerRepository, AccessLoggerRepository>();
+            services.AddScoped(typeof(IRedisRepository<>), typeof(RedisRepository<>));
+            services.AddScoped<IPostsRepository, PostsRepository>();
+            
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -129,6 +131,7 @@ namespace BlogProjectAPI
                 c.InjectStylesheet("/css/SwaggerInject.css");
                 c.DocumentTitle = "BlogProjectApi";
             });
+            app.UseMiddleware<AccessLogger>();
             app.UseMiddleware<ExceptionHandler>();
             app.UseEndpoints(endpoints =>
             {
