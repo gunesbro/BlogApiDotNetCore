@@ -10,6 +10,7 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using NodaTime;
 using ServiceStack;
 using ServiceStack.Text;
 
@@ -28,6 +29,7 @@ namespace BlogProjectAPI.Middlewares
         private AccessLogs accessLogs;
         public async Task Invoke(HttpContext context, IAccessLoggerRepository accessLogerRepository)
         {
+            var easternTimeZone = DateTimeZoneProviders.Tzdb["Europe/Istanbul"];
             accessLogs = new AccessLogs()
             {
                 Host = context.Request.Host.ToString(),
@@ -35,7 +37,7 @@ namespace BlogProjectAPI.Middlewares
                 Scheme = context.Request.Scheme,
                 QueryString = string.IsNullOrEmpty(context.Request.QueryString.Value) ? null : context.Request.QueryString.Value,
                 WhoRequested = string.IsNullOrEmpty(context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value) ? null : context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value,
-                Time = DateTime.Now
+                Time = Instant.FromDateTimeUtc(DateTime.UtcNow).InZone(easternTimeZone).ToDateTimeUnspecified()
             };
             await LogRequest(context);
             await LogResponse(context);
